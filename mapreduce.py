@@ -27,6 +27,3 @@ class ProductoMasCaroPorCategoria(MRJob):
                 max_price = price
                 max_title = title
         yield category, f"{max_title} (${max_price})"
-
-if __name__ == '__main__':
-    ProductoMasCaroPorCategoria.run()
