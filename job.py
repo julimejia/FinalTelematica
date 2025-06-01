@@ -6,7 +6,7 @@ class ProductoMasCaroPorCategoria(MRJob):
     def mapper(self, _, line):
         for row in csv.reader([line]):
             if row[0] == "id":
-                return  # Saltar encabezado
+                return
             try:
                 category = row[4]
                 price = float(row[2])
@@ -22,6 +22,3 @@ class ProductoMasCaroPorCategoria(MRJob):
                 max_price = price
                 max_title = title
         yield category, f"{max_title} (${max_price})"
-
-if __name__ == '__main__':
-    ProductoMasCaroPorCategoria.run()
