@@ -1,22 +1,27 @@
+#!/usr/bin/env python3.11
+
 from mrjob.job import MRJob
 import csv
+import sys
 
 class ProductoMasCaroPorCategoria(MRJob):
 
     def mapper(self, _, line):
-        for row in csv.reader([line]):
-            if row[0] == "id":
-                return  # Saltar encabezado
-            try:
-                category = row[4]
-                price = float(row[2])
-                title = row[1]
+        try:
+            for row in csv.reader([line]):
+                # Evitar procesar la fila del encabezado
+                if row[0].strip().lower() == "id":
+                    return
+                category = row[4].strip()
+                price = float(row[2].strip())
+                title = row[1].strip()
                 yield category, (price, title)
-            except:
-                pass
+        except Exception as e:
+            sys.stderr.write(f"Error en línea: {line}\n")
+            sys.stderr.write(f"{e}\n")
 
     def reducer(self, category, values):
-        max_price, max_title = 0, ""
+        max_price, max_title = 0.0, ""
         for price, title in values:
             if price > max_price:
                 max_price = price
