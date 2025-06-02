@@ -5,12 +5,11 @@ import pandas as pd
 import subprocess
 import os
 from mapreduce import ProductoMasCaroPorCategoria
-import numpy as np
 
 app = FastAPI()
 
 # Rutas en S3
-CLUSTER_ID = "j-1D511EL70WVJD" 
+CLUSTER_ID = "j-1D511EL70WVJD"  # ID de tu clúster EMR
 S3_SCRIPT = "s3://ha-doop/scripts/job-runner.sh"
 INPUT_S3 = "s3://ha-doop/input/productos.csv"
 OUTPUT_S3 = "s3://ha-doop/output/"
@@ -58,14 +57,12 @@ def obtener_resultados():
             break
 
         df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"], encoding='latin1')
-
-        # Reemplazar NaN con None para JSON
-        df = df.where(pd.notnull(df), None)
+        df = df.where(pd.notnull(df), None)  # Fix NaN issue
         return JSONResponse(content=df.to_dict(orient="records"))
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
-    
+
 @app.get("/descargar")
 def descargar_csv():
     # Archivo de entrada (txt descargado desde S3)
@@ -74,14 +71,14 @@ def descargar_csv():
 
     if os.path.exists(input_file):
         try:
-            
+            # Leer el txt (puedes ajustar el delimitador según tu salida real)
             df = pd.read_csv(input_file, header=None, names=["categoria", "producto_mas_caro"], encoding='utf-8', delimiter="\t")
 
             # Guardar como CSV real
             df.to_csv(output_csv, index=False)
 
             # Devolver como archivo CSV
-            return FileResponse(output_csv, media_type="csv", filename="resultado.csv")
+            return FileResponse(output_csv, media_type="text/csv", filename="resultado.csv")
 
         except Exception as e:
             return JSONResponse(status_code=500, content={"error": str(e)})
