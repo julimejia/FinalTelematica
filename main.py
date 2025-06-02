@@ -56,7 +56,7 @@ def obtener_resultados():
             s3.download_file(bucket, key, LOCAL_OUTPUT_FILE)
             break
 
-        df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"])
+        df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"], encoding='latin1')
         df = df.where(pd.notnull(df), None)  # Fix NaN issue
         return JSONResponse(content=df.to_dict(orient="records"))
 
