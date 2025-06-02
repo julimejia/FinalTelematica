@@ -57,7 +57,11 @@ def obtener_resultados():
             break
 
         df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"], encoding='latin1')
-        df = df.where(pd.notnull(df), None)  # Fix NaN issue
+
+        # Reemplazar NaN por None explícitamente
+        df = df.replace({pd.NA: None, pd.NaT: None, float('nan'): None})
+
+        # También puedes usar df.fillna(value=None), aunque no es 100% confiable con JSON
         return JSONResponse(content=df.to_dict(orient="records"))
 
     except Exception as e:
