@@ -14,7 +14,7 @@ S3_SCRIPT = "s3://ha-doop/scripts/job-runner.sh"
 INPUT_S3 = "s3://ha-doop/input/productos.csv"
 OUTPUT_S3 = "s3://ha-doop/output/"
 TMP_S3 = "s3://ha-doop/tmp/"
-LOCAL_OUTPUT_FILE = "resultado.txt"
+LOCAL_OUTPUT_FILE = "s3://ha-doop/output/resultado.txt"
 
 @app.get("/")
 def read_root():
@@ -50,13 +50,14 @@ def obtener_resultados():
     os.makedirs("resultados", exist_ok=True)
 
     try:
+
         response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
         for obj in response.get("Contents", []):
             key = obj["Key"]
             s3.download_file(bucket, key, LOCAL_OUTPUT_FILE)
             break
 
-        df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"], encoding='latin1')
+        df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"])
         df = df.where(pd.notnull(df), None)  # Fix NaN issue
         return JSONResponse(content=df.to_dict(orient="records"))
 
