@@ -60,9 +60,8 @@ def obtener_resultados():
         df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"], encoding='latin1')
 
         # Reemplazar NaN con None para JSON
-        data = df.replace({np.nan: None}).to_dict(orient="records")
-
-        return JSONResponse(content=data)
+        df = df.where(pd.notnull(df), None)
+        return JSONResponse(content=df.to_dict(orient="records"))
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
