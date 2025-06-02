@@ -82,7 +82,7 @@ def descargar_csv():
             df.to_csv(output_csv, index=False)
 
             # Devolver como archivo CSV
-            return FileResponse(output_csv, media_type="text/csv", filename="resultado.csv")
+            return FileResponse(output_csv, media_type="csv", filename="resultado.csv")
 
         except Exception as e:
             return JSONResponse(status_code=500, content={"error": str(e)})
