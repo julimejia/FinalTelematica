@@ -67,18 +67,18 @@ def obtener_resultados():
 
 @app.get("/descargar")
 def descargar_txt():
-    input_file = OUTPUT  # Ruta al archivo descargado
+    input_file = OUTPUT  # Ruta al archivo .txt descargado
     output_txt = "resultado_convertido.txt"
 
     if os.path.exists(input_file):
         try:
-            # Leer el archivo txt con codificación correcta
-            df = pd.read_csv(input_file, header=None, names=["category", "product"], encoding='latin1', delimiter="\t")
+            # Leer el archivo .txt con codificación UTF-16
+            df = pd.read_csv(input_file, header=None, names=["category", "product"], encoding='utf-16', delimiter="\t")
 
             # Guardar como archivo de texto separado por tabulaciones
             df.to_csv(output_txt, index=False, sep="\t")
 
-            # Retornar como archivo .txt
+            # Devolver como archivo .txt
             return FileResponse(output_txt, media_type="text/plain", filename="resultado.txt")
 
         except Exception as e:
