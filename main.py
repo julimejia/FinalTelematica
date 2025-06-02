@@ -83,7 +83,7 @@ def descargar_csv():
             input_file,
             header=None,
             names=["categoría", "producto_más_caro"],
-            encoding='utf-8',
+            encoding='latin1',
             sep='\t',  # Hadoop suele usar tabulaciones
             on_bad_lines='skip'
         )
@@ -93,7 +93,7 @@ def descargar_csv():
         df = df[df['categoría'] != '']
 
         # Guardar como CSV con encoding UTF-8 y cabeceras
-        df.to_csv(output_csv, index=False, encoding='utf-8-sig')
+        df.to_csv(output_csv, index=False, encoding='latin1')
 
         # Configurar headers para forzar descarga como CSV
         return FileResponse(
@@ -102,7 +102,7 @@ def descargar_csv():
             media_type="text/csv",
             headers={
                 "Content-Disposition": "attachment; filename=resultados_productos.csv",
-                "Content-Type": "text/csv; charset=utf-8"
+                "Content-Type": "text/csv; charset=latin1"
             }
         )
 
