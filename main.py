@@ -46,69 +46,22 @@ def obtener_resultados():
     s3 = boto3.client("s3", region_name="us-east-1")
     bucket = "ha-doop"
     prefix = "output/resultados"
-    LOCAL_OUTPUT_FILE = "resultados/downloaded_file.csv"  # Explicit path
 
     os.makedirs("resultados", exist_ok=True)
 
     try:
-        # 1. Download the file
         response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
-        if not response.get('Contents'):
-            return JSONResponse(
-                status_code=404,
-                content={"error": "No files found in S3 path"}
-            )
+        for obj in response.get("Contents", []):
+            key = obj["Key"]
+            s3.download_file(bucket, key, LOCAL_OUTPUT_FILE)
+            break
 
-        # Get first matching file
-        obj = response['Contents'][0]
-        s3.download_file(bucket, obj['Key'], LOCAL_OUTPUT_FILE)
-
-        # 2. Read with proper encoding and cleaning
-        with open(LOCAL_OUTPUT_FILE, 'rb') as f:
-            # Detect encoding automatically
-            rawdata = f.read(1024)
-            encoding = chardet.detect(rawdata)['encoding'] or 'utf-8'
-
-        # Read CSV with multiple fallback options
-        try:
-            df = pd.read_csv(
-                LOCAL_OUTPUT_FILE,
-                encoding=encoding,
-                header=None,
-                names=["categoria", "producto_mas_caro"],
-                on_bad_lines='skip',
-                na_values=['', 'null', 'NULL', 'NA', 'N/A', '\\N'],
-                keep_default_na=False
-            )
-        except UnicodeDecodeError:
-            # Fallback to latin1 if detected encoding fails
-            df = pd.read_csv(
-                LOCAL_OUTPUT_FILE,
-                encoding='latin1',
-                header=None,
-                names=["categoria", "producto_mas_caro"],
-                on_bad_lines='skip'
-            )
-
-        # 3. Clean the data
-        df = df.dropna(how='all')  # Remove completely empty rows
-        df = df.fillna('')  # Replace remaining nulls with empty string
-        
-        # Clean special characters from categoria column
-        df['categoria'] = df['categoria'].str.replace(r'[^\w\s]', '', regex=True)
-        df['categoria'] = df['categoria'].str.strip()
-
-        # 4. Return cleaned data
-        return JSONResponse(
-            content=df.to_dict(orient="records"),
-            media_type="application/json; charset=utf-8"
-        )
+        df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"])
+        df = df.where(pd.notnull(df), None)  # Fix NaN issue
+        return JSONResponse(content=df.to_dict(orient="records"))
 
     except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"Processing error: {str(e)}"}
-        )
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/descargar")
 def descargar_csv():
