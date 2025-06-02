@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse, FileResponse
 import boto3
 import pandas as pd
@@ -68,47 +68,24 @@ def obtener_resultados():
     
 @app.get("/descargar")
 def descargar_csv():
+    # Archivo de entrada (txt descargado desde S3)
     input_file = LOCAL_OUTPUT_FILE
     output_csv = "resultado_convertido.csv"
 
-    if not os.path.exists(input_file):
-        raise HTTPException(
-            status_code=404,
-            detail="Archivo de resultados no disponible. Ejecute primero el procesamiento."
-        )
+    if os.path.exists(input_file):
+        try:
+            
+            text_file = pd.read_table(input_file)
 
-    try:
-        # Leer el archivo con manejo robusto de encoding y delimitadores
-        df = pd.read_csv(
-            input_file,
-            header=None,
-            names=["categoría", "producto_más_caro"],
-            encoding='latin1',
-            sep='\t',  # Hadoop suele usar tabulaciones
-            on_bad_lines='skip'
-        )
+            # Guardar como CSV real
+            text_file.to_csv(output_csv)
 
-        # Limpieza de datos
-        df = df.dropna()
-        df = df[df['categoría'] != '']
+            # Devolver como archivo CSV
+            return FileResponse(output_csv, media_type="csv", filename="resultado.csv")
 
-        # Guardar como CSV con encoding UTF-8 y cabeceras
-        df.to_csv(output_csv, index=False, encoding='latin1')
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": str(e)})
 
-        # Configurar headers para forzar descarga como CSV
-        return FileResponse(
-            path=output_csv,
-            filename="resultados_productos.csv",
-            media_type="text/csv",
-            headers={
-                "Content-Disposition": "attachment; filename=resultados_productos.csv",
-                "Content-Type": "text/csv; charset=latin1"
-            }
-        )
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al procesar el archivo: {str(e)}"
-        )
+    else:
+        return JSONResponse(status_code=404, content={"error": "Archivo de resultados no disponible"})
 
