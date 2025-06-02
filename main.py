@@ -1,17 +1,19 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, FileResponse
-import subprocess
+import boto3
 import pandas as pd
-import csv
+import subprocess
 import os
-import io
-
 from mapreduce import ProductoMasCaroPorCategoria
 
 app = FastAPI()
 
-HDFS_INPUT_PATH = "/user/datasets/productos.csv"
-HDFS_OUTPUT_PATH = "/user/datasets/resultados"
+# Rutas en S3
+CLUSTER_ID = "j-xxxxxxxxxxxx"  # ID de tu clúster EMR
+S3_SCRIPT = "s3://ha-doop/scripts/job-runner.sh"
+INPUT_S3 = "s3://ha-doop/input/productos.csv"
+OUTPUT_S3 = "s3://ha-doop/output/resultados/"
+TMP_S3 = "s3://ha-doop/tmp/"
 LOCAL_OUTPUT_FILE = "resultados/resultados.csv"
 
 @app.get("/")
@@ -20,30 +22,46 @@ def read_root():
 
 @app.post("/procesar")
 def ejecutar_mapreduce():
-    # Ejecutar el job con mrjob en modo hadoop (sobre HDFS)
-    mr_job = ProductoMasCaroPorCategoria(args=[
-        "-r", "hadoop",
-        HDFS_INPUT_PATH,
-        "--output-dir", HDFS_OUTPUT_PATH
-    ])
+    emr = boto3.client("emr", region_name="us-east-1")
 
-    with mr_job.make_runner() as runner:
-        runner.run()
+    step = {
+        'Name': 'Lanzar Bash MapReduce Job',
+        'ActionOnFailure': 'CONTINUE',
+        'HadoopJarStep': {
+            'Jar': 'command-runner.jar',
+            'Args': ['bash', S3_SCRIPT]
+        }
+    }
 
-    # Descargar resultados de HDFS a archivo local
-    os.makedirs("resultados", exist_ok=True)
-    with open(LOCAL_OUTPUT_FILE, "w", encoding="utf-8") as f:
-        subprocess.run(["hdfs", "dfs", "-cat", f"{HDFS_OUTPUT_PATH}/part-*"], stdout=f)
+    response = emr.add_job_flow_steps(JobFlowId=CLUSTER_ID, Steps=[step])
+    step_id = response['StepIds'][0]
 
-    return {"mensaje": "Procesamiento completado"}
+    return JSONResponse({
+        "mensaje": "Paso lanzado correctamente",
+        "step_id": step_id
+    })
 
 @app.get("/resultados")
 def obtener_resultados():
+    s3 = boto3.client("s3", region_name="us-east-1")
+    bucket = "ha-doop"
+    prefix = "output/resultados/part"
+
+    os.makedirs("resultados", exist_ok=True)
+
     try:
+        # Descargar el primer archivo de salida
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        for obj in response.get("Contents", []):
+            key = obj["Key"]
+            s3.download_file(bucket, key, LOCAL_OUTPUT_FILE)
+            break  # solo un archivo part-*
+
         df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"])
         return JSONResponse(content=df.to_dict(orient="records"))
-    except FileNotFoundError:
-        return JSONResponse(status_code=404, content={"error": "Resultados no encontrados"})
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/descargar")
 def descargar_csv():
