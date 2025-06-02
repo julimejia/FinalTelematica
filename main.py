@@ -9,12 +9,12 @@ from mapreduce import ProductoMasCaroPorCategoria
 app = FastAPI()
 
 # Rutas en S3
-CLUSTER_ID = "j-xxxxxxxxxxxx"  # ID de tu clúster EMR
+CLUSTER_ID = "j-1D511EL70WVJD"  # ID de tu clúster EMR
 S3_SCRIPT = "s3://ha-doop/scripts/job-runner.sh"
 INPUT_S3 = "s3://ha-doop/input/productos.csv"
-OUTPUT_S3 = "s3://ha-doop/output/resultados/"
+OUTPUT_S3 = "s3://ha-doop/output/"
 TMP_S3 = "s3://ha-doop/tmp/"
-LOCAL_OUTPUT_FILE = "resultados/resultados.csv"
+LOCAL_OUTPUT_FILE = "s3://ha-doop/output/resultado.txt"
 
 @app.get("/")
 def read_root():
@@ -45,19 +45,19 @@ def ejecutar_mapreduce():
 def obtener_resultados():
     s3 = boto3.client("s3", region_name="us-east-1")
     bucket = "ha-doop"
-    prefix = "output/resultados/part"
+    prefix = "output/resultados"
 
     os.makedirs("resultados", exist_ok=True)
 
     try:
-        # Descargar el primer archivo de salida
         response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
         for obj in response.get("Contents", []):
             key = obj["Key"]
             s3.download_file(bucket, key, LOCAL_OUTPUT_FILE)
-            break  # solo un archivo part-*
+            break
 
         df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"])
+        df = df.where(pd.notnull(df), None)  # Fix NaN issue
         return JSONResponse(content=df.to_dict(orient="records"))
 
     except Exception as e:
