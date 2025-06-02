@@ -66,21 +66,20 @@ def obtener_resultados():
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/descargar")
-def descargar_csv():
-    # Archivo de entrada (txt descargado desde S3)
-    input_file = OUTPUT
-    output_csv = "resultado_convertido.csv"
+def descargar_txt():
+    input_file = OUTPUT  # Ruta al archivo descargado
+    output_txt = "resultado_convertido.txt"
 
     if os.path.exists(input_file):
         try:
-            # Leer el txt (puedes ajustar el delimitador según tu salida real)
-            df = pd.read_csv(input_file, header=None, names=["categoria", "producto_mas_caro"], encoding='utf-8', delimiter="\t")
+            # Leer el archivo txt con codificación correcta
+            df = pd.read_csv(input_file, header=None, names=["category", "product"], encoding='latin1', delimiter="\t")
 
-            # Guardar como CSV real
-            df.to_csv(output_csv, index=False)
+            # Guardar como archivo de texto separado por tabulaciones
+            df.to_csv(output_txt, index=False, sep="\t")
 
-            # Devolver como archivo CSV
-            return FileResponse(output_csv, media_type="text/csv", filename="resultado.csv")
+            # Retornar como archivo .txt
+            return FileResponse(output_txt, media_type="text/plain", filename="resultado.txt")
 
         except Exception as e:
             return JSONResponse(status_code=500, content={"error": str(e)})
