@@ -58,7 +58,7 @@ def obtener_resultados():
             s3.download_file(bucket, key, LOCAL_OUTPUT_FILE)
             break
 
-        df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"])
+        df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria"])
         df = df.where(pd.notnull(df), None)  # Fix NaN issue
         return JSONResponse(content=df.to_dict(orient="records"))
 
@@ -74,7 +74,7 @@ def descargar_csv():
     if os.path.exists(input_file):
         try:
             # Leer el txt (puedes ajustar el delimitador según tu salida real)
-            df = pd.read_csv(input_file, header=None, names=["categoria", "producto_mas_caro"], encoding='utf-8', delimiter="\t")
+            df = pd.read_csv(input_file, header=None, names=["categoria"], encoding='utf-8', delimiter="\t")
 
             # Guardar como CSV real
             df.to_csv(output_csv, index=False)
