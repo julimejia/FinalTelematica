@@ -15,6 +15,7 @@ INPUT_S3 = "s3://ha-doop/input/productos.csv"
 OUTPUT_S3 = "s3://ha-doop/output/"
 TMP_S3 = "s3://ha-doop/tmp/"
 LOCAL_OUTPUT_FILE = "s3://ha-doop/output/resultado.txt"
+OUTPUT = "resultado.txt"
 
 @app.get("/")
 def read_root():
@@ -67,7 +68,7 @@ def obtener_resultados():
 @app.get("/descargar")
 def descargar_csv():
     # Archivo de entrada (txt descargado desde S3)
-    input_file = LOCAL_OUTPUT_FILE
+    input_file = OUTPUT
     output_csv = "resultado_convertido.csv"
 
     if os.path.exists(input_file):
