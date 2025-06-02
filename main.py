@@ -66,6 +66,6 @@ def obtener_resultados():
 @app.get("/descargar")
 def descargar_csv():
     if os.path.exists(LOCAL_OUTPUT_FILE):
-        return FileResponse(LOCAL_OUTPUT_FILE, media_type="text/csv", filename="resultados.csv")
+        return FileResponse(LOCAL_OUTPUT_FILE, media_type="text", filename="resultados.txt")
     else:
         return JSONResponse(status_code=404, content={"error": "Archivo CSV no disponible"})
