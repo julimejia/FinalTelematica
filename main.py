@@ -14,7 +14,7 @@ S3_SCRIPT = "s3://ha-doop/scripts/job-runner.sh"
 INPUT_S3 = "s3://ha-doop/input/productos.csv"
 OUTPUT_S3 = "s3://ha-doop/output/"
 TMP_S3 = "s3://ha-doop/tmp/"
-LOCAL_OUTPUT_FILE = "s3://ha-doop/output/resultado.txt"
+LOCAL_OUTPUT_FILE = "resultado.txt"
 
 @app.get("/")
 def read_root():
