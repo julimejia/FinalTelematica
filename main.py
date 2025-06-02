@@ -56,7 +56,7 @@ def obtener_resultados():
             s3.download_file(bucket, key, LOCAL_OUTPUT_FILE)
             break
 
-        df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"])
+        df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"], encoding='latin1')
         df = df.where(pd.notnull(df), None)  # Fix NaN issue
         return JSONResponse(content=df.to_dict(orient="records"))
 
@@ -65,7 +65,24 @@ def obtener_resultados():
 
 @app.get("/descargar")
 def descargar_csv():
-    if os.path.exists(LOCAL_OUTPUT_FILE):
-        return FileResponse(LOCAL_OUTPUT_FILE, media_type="text", filename="resultados.txt")
+    # Archivo de entrada (txt descargado desde S3)
+    input_file = LOCAL_OUTPUT_FILE
+    output_csv = "resultado_convertido.csv"
+
+    if os.path.exists(input_file):
+        try:
+            # Leer el txt (puedes ajustar el delimitador según tu salida real)
+            df = pd.read_csv(input_file, header=None, names=["categoria", "producto_mas_caro"], encoding='utf-8', delimiter="\t")
+
+            # Guardar como CSV real
+            df.to_csv(output_csv, index=False)
+
+            # Devolver como archivo CSV
+            return FileResponse(output_csv, media_type="text/csv", filename="resultado.csv")
+
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": str(e)})
+
     else:
-        return JSONResponse(status_code=404, content={"error": "Archivo CSV no disponible"})
+        return JSONResponse(status_code=404, content={"error": "Archivo de resultados no disponible"})
+
