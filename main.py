@@ -5,6 +5,7 @@ import pandas as pd
 import subprocess
 import os
 from mapreduce import ProductoMasCaroPorCategoria
+import numpy as np
 
 app = FastAPI()
 
@@ -57,12 +58,15 @@ def obtener_resultados():
             break
 
         df = pd.read_csv(LOCAL_OUTPUT_FILE, header=None, names=["categoria", "producto_mas_caro"], encoding='latin1')
-        df = df.where(pd.notnull(df), None)  # Fix NaN issue
-        return JSONResponse(content=df.to_dict(orient="records"))
+
+        # Reemplazar NaN con None para JSON
+        data = df.replace({np.nan: None}).to_dict(orient="records")
+
+        return JSONResponse(content=data)
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
-
+    
 @app.get("/descargar")
 def descargar_csv():
     # Archivo de entrada (txt descargado desde S3)
